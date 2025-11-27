@@ -105,7 +105,7 @@ exports[`find-tasks tool searching tasks should search tasks and return results 
 "Search results for "important meeting": 2 (limit 10), more available.
 Filter: matching "important meeting".
 Preview:
-    Task containing search term • P4 • id=8485093748
+    Task containing search term • P4 • work • id=8485093748
     Another matching task • P3 • id=8485093749
 Next:
 - Use update-tasks to modify priorities or due dates

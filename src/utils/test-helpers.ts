@@ -1,5 +1,100 @@
 import type { CurrentUser, PersonalProject, Section, Task } from '@doist/todoist-api-typescript'
+import { jest } from '@jest/globals'
 import { getToolOutput } from '../mcp-helpers'
+
+/**
+ * Creates a mock fetch function for testing REST API workarounds.
+ * Returns tasks in the format the Todoist REST API would return.
+ */
+export function createMockFetch(tasks: Task[] = []) {
+    return jest.fn<typeof fetch>().mockImplementation((url, options) => {
+        const urlString = url.toString()
+        const opts = options as RequestInit | undefined
+        // Handle different endpoints
+        if (urlString.includes('/rest/v2/tasks')) {
+            if (opts?.method === 'POST') {
+                // Update task - return the updated task
+                return Promise.resolve(
+                    new Response(JSON.stringify(tasks[0] || createMockTask()), {
+                        status: 200,
+                        statusText: 'OK',
+                    }),
+                )
+            }
+            if (opts?.method === 'DELETE') {
+                return Promise.resolve(
+                    new Response(null, {
+                        status: 204,
+                        statusText: 'No Content',
+                    }),
+                )
+            }
+            // GET tasks
+            return Promise.resolve(
+                new Response(JSON.stringify(tasks), {
+                    status: 200,
+                    statusText: 'OK',
+                }),
+            )
+        }
+        if (urlString.includes('/rest/v2/projects') && opts?.method === 'DELETE') {
+            return Promise.resolve(
+                new Response(null, {
+                    status: 204,
+                    statusText: 'No Content',
+                }),
+            )
+        }
+        if (urlString.includes('/rest/v2/sections') && opts?.method === 'DELETE') {
+            return Promise.resolve(
+                new Response(null, {
+                    status: 204,
+                    statusText: 'No Content',
+                }),
+            )
+        }
+        if (urlString.includes('/rest/v2/comments') && opts?.method === 'DELETE') {
+            return Promise.resolve(
+                new Response(null, {
+                    status: 204,
+                    statusText: 'No Content',
+                }),
+            )
+        }
+        // Default fallback
+        return Promise.resolve(
+            new Response(JSON.stringify([]), {
+                status: 200,
+                statusText: 'OK',
+            }),
+        )
+    })
+}
+
+/**
+ * Sets up global fetch mock for tests using REST API workarounds.
+ * Call this in beforeEach and pass the mock tasks you want returned.
+ */
+export function setupFetchMock(tasks: Task[] = []) {
+    const mockFetch = createMockFetch(tasks)
+    global.fetch = mockFetch as unknown as typeof fetch
+    return mockFetch
+}
+
+/**
+ * Sets up global fetch mock that returns an error response.
+ * Use this for testing error handling in API calls.
+ */
+export function setupFetchErrorMock(status: number, statusText: string) {
+    const mockFetch = jest.fn<typeof fetch>().mockResolvedValue(
+        new Response(null, {
+            status,
+            statusText,
+        }),
+    )
+    global.fetch = mockFetch as unknown as typeof fetch
+    return mockFetch
+}
 
 /**
  * Mapped task type matching the output of mapTask function.

@@ -4,7 +4,7 @@ exports[`add-tasks tool adding multiple tasks should add multiple tasks and retu
 "Added 2 tasks to projects.
 Tasks:
     First task content • P4 • id=8485093748
-    Second task content • due 2025-08-15 • P3 • id=8485093749.
+    Second task content • due 2025-08-15 • P3 • work / urgent • id=8485093749.
 Next:
 - Use get-overview to see your updated project organization"
 `;

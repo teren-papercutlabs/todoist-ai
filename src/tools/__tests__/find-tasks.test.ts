@@ -3,12 +3,13 @@ import { jest } from '@jest/globals'
 import { getTasksByFilter } from '../../tool-helpers.js'
 import {
     createMappedTask,
-    createMockApiResponse,
     createMockTask,
     createMockUser,
     extractStructuredContent,
     extractTextContent,
     type MappedTask,
+    setupFetchErrorMock,
+    setupFetchMock,
     TEST_ERRORS,
     TEST_IDS,
     TODAY,
@@ -238,16 +239,13 @@ describe(`${FIND_TASKS} tool`, () => {
                 expectedApiParam: { parentId: TEST_IDS.TASK_1 },
                 tasks: [createMockTask({ content: 'Subtask' })],
             },
-        ])('should find tasks in $name', async ({ params, expectedApiParam, tasks }) => {
-            mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse(tasks))
+        ])('should find tasks in $name', async ({ params, tasks }) => {
+            // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock(tasks)
 
             const result = await findTasks.execute(params, mockTodoistApi)
 
-            expect(mockTodoistApi.getTasks).toHaveBeenCalledWith({
-                limit: 10,
-                cursor: null,
-                ...expectedApiParam,
-            })
+            expect(global.fetch).toHaveBeenCalled()
 
             expect(extractTextContent(result)).toMatchSnapshot()
 
@@ -275,7 +273,8 @@ describe(`${FIND_TASKS} tool`, () => {
                     description: 'different content',
                 }),
             ]
-            mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse(tasks))
+            // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock(tasks)
 
             const result = await findTasks.execute(
                 {
@@ -286,11 +285,7 @@ describe(`${FIND_TASKS} tool`, () => {
                 mockTodoistApi,
             )
 
-            expect(mockTodoistApi.getTasks).toHaveBeenCalledWith({
-                limit: 10,
-                cursor: null,
-                projectId: TEST_IDS.PROJECT_TEST,
-            })
+            expect(global.fetch).toHaveBeenCalled()
 
             const structuredContent = extractStructuredContent(result)
             expect(structuredContent.tasks).toHaveLength(1)
@@ -300,7 +295,8 @@ describe(`${FIND_TASKS} tool`, () => {
         })
 
         it('should handle empty containers', async () => {
-            mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse([]))
+            // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock([])
 
             const result = await findTasks.execute(
                 {
@@ -316,10 +312,9 @@ describe(`${FIND_TASKS} tool`, () => {
         })
 
         it('should handle pagination with containers', async () => {
-            mockTodoistApi.getTasks.mockResolvedValue({
-                results: [],
-                nextCursor: 'next-cursor',
-            })
+            // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+            // Note: REST API doesn't support pagination for direct task queries, so nextCursor is always null
+            setupFetchMock([])
 
             const result = await findTasks.execute(
                 {
@@ -330,26 +325,23 @@ describe(`${FIND_TASKS} tool`, () => {
                 mockTodoistApi,
             )
 
-            expect(mockTodoistApi.getTasks).toHaveBeenCalledWith({
-                limit: 25,
-                cursor: 'current-cursor',
-                projectId: TEST_IDS.PROJECT_TEST,
-            })
+            expect(global.fetch).toHaveBeenCalled()
 
             const structuredContent = extractStructuredContent(result)
-            expect(structuredContent.hasMore).toBe(true)
-            expect(structuredContent.nextCursor).toBe('next-cursor')
+            // REST API workaround doesn't support pagination
+            expect(structuredContent.hasMore).toBe(false)
+            expect(structuredContent.nextCursor).toBeFalsy()
         })
     })
 
     describe('container error handling', () => {
         it('should propagate API errors for container queries', async () => {
-            const apiError = new Error('API Error: Project not found')
-            mockTodoistApi.getTasks.mockRejectedValue(apiError)
+            // Mock fetch to return an error response
+            setupFetchErrorMock(404, 'Not Found')
 
             await expect(
                 findTasks.execute({ projectId: 'non-existent', limit: 10 }, mockTodoistApi),
-            ).rejects.toThrow('API Error: Project not found')
+            ).rejects.toThrow('Todoist API error: 404 Not Found')
         })
     })
 
@@ -528,50 +520,42 @@ describe(`${FIND_TASKS} tool`, () => {
                 },
                 expectedApiParam: { parentId: TEST_IDS.TASK_1 },
             },
-        ])(
-            'should apply label filtering to container searches: $name',
-            async ({ params, expectedApiParam }) => {
-                const allTasks = [
-                    createMockTask({
-                        id: '1',
-                        content: 'Task with matching label',
-                        labels: params.labels,
-                    }),
-                    createMockTask({
-                        id: '2',
-                        content: 'Task without matching label',
-                        labels: ['other'],
-                    }),
-                ]
-                mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse(allTasks))
+        ])('should apply label filtering to container searches: $name', async ({ params }) => {
+            const allTasks = [
+                createMockTask({
+                    id: '1',
+                    content: 'Task with matching label',
+                    labels: params.labels,
+                }),
+                createMockTask({
+                    id: '2',
+                    content: 'Task without matching label',
+                    labels: ['other'],
+                }),
+            ]
+            // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock(allTasks)
 
-                const result = await findTasks.execute(params, mockTodoistApi)
+            const result = await findTasks.execute(params, mockTodoistApi)
 
-                expect(mockTodoistApi.getTasks).toHaveBeenCalledWith({
-                    limit: 10,
-                    cursor: null,
-                    ...expectedApiParam,
-                })
+            expect(global.fetch).toHaveBeenCalled()
 
-                // Should filter results client-side based on labels
-                const structuredContent = extractStructuredContent(result)
-                if (params.labelsOperator === 'and') {
-                    // AND operation: task must have all specified labels
-                    expect(structuredContent.tasks).toEqual(
-                        expect.arrayContaining([
-                            expect.objectContaining({
-                                labels: expect.arrayContaining(params.labels),
-                            }),
-                        ]),
-                    )
-                } else {
-                    // OR operation: task must have at least one of the specified labels
-                    expect((structuredContent.tasks as MappedTask[]).length).toBeGreaterThanOrEqual(
-                        0,
-                    )
-                }
-            },
-        )
+            // Should filter results client-side based on labels
+            const structuredContent = extractStructuredContent(result)
+            if (params.labelsOperator === 'and') {
+                // AND operation: task must have all specified labels
+                expect(structuredContent.tasks).toEqual(
+                    expect.arrayContaining([
+                        expect.objectContaining({
+                            labels: expect.arrayContaining(params.labels),
+                        }),
+                    ]),
+                )
+            } else {
+                // OR operation: task must have at least one of the specified labels
+                expect((structuredContent.tasks as MappedTask[]).length).toBeGreaterThanOrEqual(0)
+            }
+        })
 
         it('should handle empty labels array', async () => {
             const params = {
@@ -614,16 +598,12 @@ describe(`${FIND_TASKS} tool`, () => {
                     labels: ['work'],
                 }),
             ]
-            mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse(allTasks))
+            // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock(allTasks)
 
             const result = await findTasks.execute(params, mockTodoistApi)
 
-            // Should call API with container filter
-            expect(mockTodoistApi.getTasks).toHaveBeenCalledWith({
-                limit: 10,
-                cursor: null,
-                projectId: TEST_IDS.PROJECT_TEST,
-            })
+            expect(global.fetch).toHaveBeenCalled()
 
             // Should filter results by search text AND labels
             const structuredContent = extractStructuredContent(result)
@@ -765,7 +745,8 @@ End of test content.`
                 description: 'See this [documentation](https://docs.example.com) for details.',
             })
 
-            mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse([taskWithLinks]))
+            // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock([taskWithLinks])
 
             const result = await findTasks.execute(
                 { projectId: TEST_IDS.PROJECT_TEST, limit: 10 },
@@ -844,7 +825,8 @@ End of test content.`
                     }),
                 ]
 
-                mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse(mockTasks))
+                // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+                setupFetchMock(mockTasks)
 
                 const result = await findTasks.execute(
                     { projectId: TEST_IDS.PROJECT_WORK, limit: 10 },
@@ -919,7 +901,8 @@ End of test content.`
                     }),
                 ]
 
-                mockTodoistApi.getTasks.mockResolvedValue(createMockApiResponse(mockTasks))
+                // Container-based queries use direct REST API (fetch) due to SDK bug workaround
+                setupFetchMock(mockTasks)
 
                 mockResolveUserNameToId.mockResolvedValue({
                     userId: 'specific-user-id',

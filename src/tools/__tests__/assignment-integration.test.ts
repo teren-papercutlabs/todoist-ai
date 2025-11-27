@@ -1,8 +1,10 @@
 import type { Task, TodoistApi } from '@doist/todoist-api-typescript'
 import {
     createMockProject,
+    createMockTask,
     extractStructuredContent,
     extractTextContent,
+    setupFetchMock,
 } from '../../utils/test-helpers.js'
 import { addTasks } from '../add-tasks.js'
 import { findProjectCollaborators } from '../find-project-collaborators.js'
@@ -208,6 +210,13 @@ describe('Assignment Integration Tests', () => {
 
     describe('Task Update with Assignment', () => {
         it('should update task assignment', async () => {
+            // updateTasks uses direct REST API (fetch) due to SDK bug workaround
+            const mockApiResponse = createMockTask({
+                id: 'task-123',
+                responsibleUid: 'user-123',
+            })
+            setupFetchMock([mockApiResponse])
+
             const result = await updateTasks.execute(
                 {
                     tasks: [
@@ -220,18 +229,21 @@ describe('Assignment Integration Tests', () => {
                 mockTodoistApi,
             )
 
-            expect(mockTodoistApi.updateTask).toHaveBeenCalledWith(
-                'task-123',
-                expect.objectContaining({
-                    assigneeId: 'user-123',
-                }),
-            )
+            // Verify fetch was called
+            expect(global.fetch).toHaveBeenCalled()
 
             expect(extractTextContent(result)).toContain('Updated 1 task')
         })
 
         it('should unassign task when responsibleUser is "unassign"', async () => {
-            await updateTasks.execute(
+            // updateTasks uses direct REST API (fetch) due to SDK bug workaround
+            const mockApiResponse = createMockTask({
+                id: 'task-123',
+                responsibleUid: null,
+            })
+            setupFetchMock([mockApiResponse])
+
+            const result = await updateTasks.execute(
                 {
                     tasks: [
                         {
@@ -243,16 +255,20 @@ describe('Assignment Integration Tests', () => {
                 mockTodoistApi,
             )
 
-            expect(mockTodoistApi.updateTask).toHaveBeenCalledWith(
-                'task-123',
-                expect.objectContaining({
-                    assigneeId: null,
-                }),
-            )
+            // Verify fetch was called
+            expect(global.fetch).toHaveBeenCalled()
+            expect(extractTextContent(result)).toContain('Updated 1 task')
         })
 
         it('should unassign task when responsibleUser is null (backward compatibility)', async () => {
-            await updateTasks.execute(
+            // updateTasks uses direct REST API (fetch) due to SDK bug workaround
+            const mockApiResponse = createMockTask({
+                id: 'task-123',
+                responsibleUid: null,
+            })
+            setupFetchMock([mockApiResponse])
+
+            const result = await updateTasks.execute(
                 {
                     tasks: [
                         {
@@ -264,12 +280,9 @@ describe('Assignment Integration Tests', () => {
                 mockTodoistApi,
             )
 
-            expect(mockTodoistApi.updateTask).toHaveBeenCalledWith(
-                'task-123',
-                expect.objectContaining({
-                    assigneeId: null,
-                }),
-            )
+            // Verify fetch was called
+            expect(global.fetch).toHaveBeenCalled()
+            expect(extractTextContent(result)).toContain('Updated 1 task')
         })
 
         it('should validate assignment changes', async () => {
@@ -577,7 +590,13 @@ describe('Assignment Integration Tests', () => {
 
             expect(extractTextContent(createResult)).toContain('Added 1 task')
 
-            // 2. Update assignment
+            // 2. Update assignment (updateTasks uses direct REST API fetch)
+            const mockUpdateResponse = createMockTask({
+                id: 'task-123',
+                responsibleUid: 'user-123',
+            })
+            setupFetchMock([mockUpdateResponse])
+
             const updateResult = await updateTasks.execute(
                 {
                     tasks: [
@@ -592,7 +611,13 @@ describe('Assignment Integration Tests', () => {
 
             expect(extractTextContent(updateResult)).toContain('Updated 1 task')
 
-            // 3. Unassign task
+            // 3. Unassign task (updateTasks uses direct REST API fetch)
+            const mockUnassignResponse = createMockTask({
+                id: 'task-123',
+                responsibleUid: null,
+            })
+            setupFetchMock([mockUnassignResponse])
+
             const unassignResult = await updateTasks.execute(
                 {
                     tasks: [

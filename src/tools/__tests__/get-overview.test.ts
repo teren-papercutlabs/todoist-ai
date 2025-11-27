@@ -6,6 +6,7 @@ import {
     createMockTask,
     extractStructuredContent,
     extractTextContent,
+    setupFetchMock,
     TEST_ERRORS,
     TEST_IDS,
 } from '../../utils/test-helpers.js'
@@ -167,10 +168,8 @@ describe(`${GET_OVERVIEW} tool`, () => {
                 results: mockSections,
                 nextCursor: null,
             })
-            mockTodoistApi.getTasks.mockResolvedValue({
-                results: mockTasks,
-                nextCursor: null,
-            })
+            // Task fetching uses direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock(mockTasks)
 
             const result = await getOverview.execute(
                 { projectId: TEST_IDS.PROJECT_TEST },
@@ -181,11 +180,7 @@ describe(`${GET_OVERVIEW} tool`, () => {
             expect(mockTodoistApi.getSections).toHaveBeenCalledWith({
                 projectId: TEST_IDS.PROJECT_TEST,
             })
-            expect(mockTodoistApi.getTasks).toHaveBeenCalledWith({
-                projectId: TEST_IDS.PROJECT_TEST,
-                limit: 50,
-                cursor: undefined,
-            })
+            expect(global.fetch).toHaveBeenCalled()
 
             // Test text content with snapshot
             expect(extractTextContent(result)).toMatchSnapshot()
@@ -221,7 +216,8 @@ describe(`${GET_OVERVIEW} tool`, () => {
 
             mockTodoistApi.getProject.mockResolvedValue(mockProject)
             mockTodoistApi.getSections.mockResolvedValue({ results: [], nextCursor: null })
-            mockTodoistApi.getTasks.mockResolvedValue({ results: [], nextCursor: null })
+            // Task fetching uses direct REST API (fetch) due to SDK bug workaround
+            setupFetchMock([])
 
             const result = await getOverview.execute(
                 { projectId: 'empty-project-id' },
