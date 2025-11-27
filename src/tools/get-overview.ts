@@ -1,4 +1,4 @@
-import type { Section, TodoistApi } from '@doist/todoist-api-typescript'
+import type { Section, Task, TodoistApi } from '@doist/todoist-api-typescript'
 import { z } from 'zod'
 import { getToolOutput } from '../mcp-helpers.js'
 import type { TodoistTool } from '../todoist-tool.js'
@@ -179,17 +179,34 @@ function buildProjectStructure(
     }
 }
 
-async function getAllTasksForProject(client: TodoistApi, projectId: string): Promise<MappedTask[]> {
+async function getAllTasksForProject(
+    _client: TodoistApi,
+    projectId: string,
+): Promise<MappedTask[]> {
     let allTasks: MappedTask[] = []
     let cursor: string | undefined
     do {
-        const { results, nextCursor } = await client.getTasks({
-            projectId,
-            limit: ApiLimits.TASKS_BATCH_SIZE,
-            cursor: cursor ?? undefined,
+        // WORKAROUND: SDK has bug where GET requests don't convert camelCase to snake_case
+        // Using direct REST API call instead
+        const params = new URLSearchParams()
+        params.append('project_id', projectId)
+        params.append('limit', String(ApiLimits.TASKS_BATCH_SIZE))
+        if (cursor) params.append('cursor', cursor)
+
+        const response = await fetch(`https://api.todoist.com/rest/v2/tasks?${params}`, {
+            headers: {
+                Authorization: `Bearer ${process.env.TODOIST_API_KEY}`,
+            },
         })
+
+        if (!response.ok) {
+            throw new Error(`Todoist API error: ${response.status} ${response.statusText}`)
+        }
+
+        const results = (await response.json()) as Task[]
+
         allTasks = allTasks.concat(results.map(mapTask))
-        cursor = nextCursor ?? undefined
+        cursor = undefined // REST API doesn't support pagination for direct task queries
     } while (cursor)
     return allTasks
 }

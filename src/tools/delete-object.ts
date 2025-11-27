@@ -24,21 +24,38 @@ const deleteObject = {
     name: ToolNames.DELETE_OBJECT,
     description: 'Delete a project, section, task, or comment by its ID.',
     parameters: ArgsSchema,
-    async execute(args, client) {
-        switch (args.type) {
-            case 'project':
-                await client.deleteProject(args.id)
-                break
-            case 'section':
-                await client.deleteSection(args.id)
-                break
-            case 'task':
-                await client.deleteTask(args.id)
-                break
-            case 'comment':
-                await client.deleteComment(args.id)
-                break
+    async execute(args, _client) {
+        // WORKAROUND: Use direct REST API to avoid SDK bugs
+        const deleteViaAPI = async (type: string, id: string) => {
+            let endpoint = ''
+            switch (type) {
+                case 'project':
+                    endpoint = `https://api.todoist.com/rest/v2/projects/${id}`
+                    break
+                case 'section':
+                    endpoint = `https://api.todoist.com/rest/v2/sections/${id}`
+                    break
+                case 'task':
+                    endpoint = `https://api.todoist.com/rest/v2/tasks/${id}`
+                    break
+                case 'comment':
+                    endpoint = `https://api.todoist.com/rest/v2/comments/${id}`
+                    break
+            }
+
+            const response = await fetch(endpoint, {
+                method: 'DELETE',
+                headers: {
+                    Authorization: `Bearer ${process.env.TODOIST_API_KEY}`,
+                },
+            })
+
+            if (!response.ok && response.status !== 204) {
+                throw new Error(`Todoist API error: ${response.status} ${response.statusText}`)
+            }
         }
+
+        await deleteViaAPI(args.type, args.id)
 
         const textContent = generateTextContent({
             type: args.type,

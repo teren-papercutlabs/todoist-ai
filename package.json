@@ -6,7 +6,8 @@
     "types": "./dist/index.d.ts",
     "mcpName": "net.todoist/mcp",
     "bin": {
-        "todoist-ai": "dist/main.js"
+        "todoist-ai": "dist/main.js",
+        "todoist": "dist/cli.js"
     },
     "files": [
         "dist",

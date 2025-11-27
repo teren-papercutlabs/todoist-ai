@@ -1,4 +1,4 @@
-import { GetTasksArgs } from '@doist/todoist-api-typescript'
+import type { Task } from '@doist/todoist-api-typescript'
 import { z } from 'zod'
 import {
     appendToQuery,
@@ -101,19 +101,29 @@ const findTasks = {
 
         // If using container-based filtering, use direct API
         if (projectId || sectionId || parentId) {
-            const taskParams: GetTasksArgs = {
-                limit,
-                cursor: cursor ?? null,
+            // WORKAROUND: SDK has bug where GET requests don't convert camelCase to snake_case
+            // Using direct REST API call instead
+            const params = new URLSearchParams()
+            params.append('limit', String(limit))
+            if (cursor) params.append('cursor', cursor)
+
+            const actualProjectId = projectId === 'inbox' ? todoistUser.inboxProjectId : projectId
+            if (actualProjectId) params.append('project_id', actualProjectId)
+            if (sectionId) params.append('section_id', sectionId)
+            if (parentId) params.append('parent_id', parentId)
+
+            const response = await fetch(`https://api.todoist.com/rest/v2/tasks?${params}`, {
+                headers: {
+                    Authorization: `Bearer ${process.env.TODOIST_API_KEY}`,
+                },
+            })
+
+            if (!response.ok) {
+                throw new Error(`Todoist API error: ${response.status} ${response.statusText}`)
             }
 
-            if (projectId) {
-                taskParams.projectId =
-                    projectId === 'inbox' ? todoistUser.inboxProjectId : projectId
-            }
-            if (sectionId) taskParams.sectionId = sectionId
-            if (parentId) taskParams.parentId = parentId
-
-            const { results, nextCursor } = await client.getTasks(taskParams)
+            const results = (await response.json()) as Task[]
+            const nextCursor = null // REST API doesn't support pagination for direct task queries
             const mappedTasks = results.map(mapTask)
 
             // Apply search text filter

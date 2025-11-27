@@ -19,6 +19,7 @@ type TaskLike = {
     dueDate?: string
     priority?: number
     projectName?: string
+    labels?: string[]
 }
 
 type ProjectLike = {
@@ -129,9 +130,10 @@ function formatTaskPreview(task: TaskLike): string {
     const content = task.content || task.title || 'Untitled'
     const due = task.dueDate ? ` • due ${task.dueDate}` : ''
     const priority = task.priority ? ` • ${formatPriorityForDisplay(task.priority)}` : ''
+    const labels = task.labels?.length ? ` • ${task.labels.join(' / ')}` : ''
     const project = task.projectName ? ` • ${task.projectName}` : ''
     const id = task.id ? ` • id=${task.id}` : ''
-    return `    ${content}${due}${priority}${project}${id}`
+    return `    ${content}${due}${priority}${labels}${project}${id}`
 }
 
 /**

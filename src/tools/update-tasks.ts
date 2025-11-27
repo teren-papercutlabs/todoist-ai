@@ -154,16 +154,41 @@ const updateTasks = {
                 }
             }
 
-            // If no move parameters are provided, use updateTask without moveTask
+            // WORKAROUND: Use direct REST API to avoid SDK bugs
+            const updateTask = async (taskId: string, args: UpdateTaskArgs) => {
+                const snakeCaseArgs: Record<string, unknown> = {}
+                for (const [key, value] of Object.entries(args)) {
+                    // Convert camelCase to snake_case
+                    const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`)
+                    snakeCaseArgs[snakeKey] = value
+                }
+
+                const response = await fetch(`https://api.todoist.com/rest/v2/tasks/${taskId}`, {
+                    method: 'POST',
+                    headers: {
+                        Authorization: `Bearer ${process.env.TODOIST_API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(snakeCaseArgs),
+                })
+
+                if (!response.ok) {
+                    throw new Error(`Todoist API error: ${response.status} ${response.statusText}`)
+                }
+
+                return await response.json()
+            }
+
+            // If no move parameters are provided, update task directly
             if (!projectId && !sectionId && !parentId) {
-                return await client.updateTask(id, updateArgs)
+                return await updateTask(id, updateArgs)
             }
 
             const moveArgs = createMoveTaskArgs(id, projectId, sectionId, parentId)
             const movedTask = await client.moveTask(id, moveArgs)
 
             if (Object.keys(updateArgs).length > 0) {
-                return await client.updateTask(id, updateArgs)
+                return await updateTask(id, updateArgs)
             }
 
             return movedTask

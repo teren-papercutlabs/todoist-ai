@@ -38,10 +38,6 @@ const tools = {
     findTasks,
     findTasksByDate,
     findCompletedTasks,
-    // Project management tools
-    addProjects,
-    updateProjects,
-    findProjects,
     // Section management tools
     addSections,
     updateSections,
@@ -50,18 +46,9 @@ const tools = {
     addComments,
     updateComments,
     findComments,
-    // Activity and audit tools
-    findActivity,
     // General tools
     getOverview,
     deleteObject,
-    userInfo,
-    // Assignment and collaboration tools
-    findProjectCollaborators,
-    manageAssignments,
-    // OpenAI MCP tools
-    search,
-    fetch,
 }
 
 export { tools, getMcpServer }
