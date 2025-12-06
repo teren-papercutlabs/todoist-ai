@@ -8,6 +8,7 @@ import { addSections } from './tools/add-sections.js'
 // Task management tools
 import { addTasks } from './tools/add-tasks.js'
 import { completeTasks } from './tools/complete-tasks.js'
+import { getTasks } from './tools/get-tasks.js'
 // General tools
 import { deleteObject } from './tools/delete-object.js'
 import { fetch } from './tools/fetch.js'
@@ -34,6 +35,7 @@ const tools = {
     // Task management tools
     addTasks,
     completeTasks,
+    getTasks,
     updateTasks,
     findTasks,
     findTasksByDate,
@@ -57,6 +59,7 @@ export {
     // Task management tools
     addTasks,
     completeTasks,
+    getTasks,
     updateTasks,
     findTasks,
     findTasksByDate,

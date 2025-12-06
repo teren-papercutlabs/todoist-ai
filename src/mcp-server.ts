@@ -6,6 +6,7 @@ import { addProjects } from './tools/add-projects.js'
 import { addSections } from './tools/add-sections.js'
 import { addTasks } from './tools/add-tasks.js'
 import { completeTasks } from './tools/complete-tasks.js'
+import { getTasks } from './tools/get-tasks.js'
 import { deleteObject } from './tools/delete-object.js'
 import { fetch } from './tools/fetch.js'
 import { findActivity } from './tools/find-activity.js'
@@ -116,6 +117,7 @@ function getMcpServer({ todoistApiKey, baseUrl }: { todoistApiKey: string; baseU
     // Task management tools
     registerTool(addTasks, server, todoist)
     registerTool(completeTasks, server, todoist)
+    registerTool(getTasks, server, todoist)
     registerTool(updateTasks, server, todoist)
     registerTool(findTasks, server, todoist)
     registerTool(findTasksByDate, server, todoist)

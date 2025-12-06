@@ -10,6 +10,7 @@ export const ToolNames = {
     ADD_TASKS: 'add-tasks',
     COMPLETE_TASKS: 'complete-tasks',
     UPDATE_TASKS: 'update-tasks',
+    GET_TASKS: 'get-tasks',
     FIND_TASKS: 'find-tasks',
     FIND_TASKS_BY_DATE: 'find-tasks-by-date',
     FIND_COMPLETED_TASKS: 'find-completed-tasks',

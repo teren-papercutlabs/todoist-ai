@@ -38,6 +38,7 @@ if (!TODOIST_API_KEY) {
 const toolMap: Record<string, Tool> = {
     'add-tasks': tools.addTasks,
     'complete-tasks': tools.completeTasks,
+    'get-tasks': tools.getTasks,
     'update-tasks': tools.updateTasks,
     'find-tasks': tools.findTasks,
     'find-tasks-by-date': tools.findTasksByDate,
@@ -74,6 +75,7 @@ Commands:
   Task Management:
     add-tasks                Create one or more tasks
     complete-tasks           Mark tasks as complete
+    get-tasks                Retrieve full details for specific tasks by ID
     update-tasks             Update existing tasks
     find-tasks               Search for tasks
     find-tasks-by-date       Find tasks by date range
