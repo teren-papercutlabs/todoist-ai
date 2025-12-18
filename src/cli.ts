@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import { TodoistApi } from '@doist/todoist-api-typescript'
-import dotenv from 'dotenv'
+import { existsSync, readFileSync } from 'fs'
+import { homedir } from 'os'
+import { join } from 'path'
 import { z } from 'zod'
 // biome-ignore lint/performance/noNamespaceImport: tool mapping requires namespace import
 import * as tools from './index.js'
@@ -22,15 +24,40 @@ interface Tool {
     execute: (args: any, client: TodoistApi) => Promise<McpResult>
 }
 
-// Load environment variables
-dotenv.config()
+/**
+ * Get Todoist API key from token store
+ * Token location: ~/.config/claude-assistant/tokens/{user}/todoist.json
+ */
+function getTodoistApiKey(): string | null {
+    const username = process.env.CLAUDE_ASSISTANT_USER || 'teren'
+    const tokenPath = join(
+        homedir(),
+        '.config',
+        'claude-assistant',
+        'tokens',
+        username,
+        'todoist.json',
+    )
 
-const TODOIST_API_KEY = process.env.TODOIST_API_KEY
+    if (!existsSync(tokenPath)) {
+        return null
+    }
+
+    try {
+        const tokenData = JSON.parse(readFileSync(tokenPath, 'utf-8'))
+        return tokenData.access_token || null
+    } catch {
+        return null
+    }
+}
+
+const TODOIST_API_KEY = getTodoistApiKey()
 const TODOIST_BASE_URL = process.env.TODOIST_BASE_URL
 
 if (!TODOIST_API_KEY) {
-    console.error('Error: TODOIST_API_KEY environment variable is required')
-    console.error('Set it in .env file or export TODOIST_API_KEY=your_token')
+    const username = process.env.CLAUDE_ASSISTANT_USER || 'teren'
+    console.error(`Error: No Todoist token for user "${username}"`)
+    console.error(`Expected: ~/.config/claude-assistant/tokens/${username}/todoist.json`)
     process.exit(1)
 }
 
