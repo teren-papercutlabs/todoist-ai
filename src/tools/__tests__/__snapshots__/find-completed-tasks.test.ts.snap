@@ -5,6 +5,7 @@ exports[`find-completed-tasks tool getting completed tasks by completion date (d
 Filter: completed date: 2025-08-10 to 2025-08-15.
 Preview:
     Completed task 1 • due 2025-08-14 • P3 • work • id=8485093748
+        Task completed yesterday
 Next:
 - Use find-tasks-by-date for active tasks or get-overview for current productivity."
 `;
@@ -22,6 +23,7 @@ exports[`find-completed-tasks tool getting completed tasks by due date should ge
 Filter: due date: 2025-08-10 to 2025-08-20.
 Preview:
     Task completed by due date • due 2025-08-15 • P2 • urgent • id=8485093750
+        This task was due and completed
 Next:
 - Use find-tasks-by-date for active tasks or get-overview for current productivity.
 - Recurring tasks will automatically create new instances."

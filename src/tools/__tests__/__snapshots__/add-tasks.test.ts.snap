@@ -4,7 +4,8 @@ exports[`add-tasks tool adding multiple tasks should add multiple tasks and retu
 "Added 2 tasks to projects.
 Tasks:
     First task content • P4 • id=8485093748
-    Second task content • due 2025-08-15 • P3 • work / urgent • id=8485093749.
+    Second task content • due 2025-08-15 • P3 • work / urgent • id=8485093749
+        Task description.
 Next:
 - Use get-overview to see your updated project organization"
 `;
@@ -29,7 +30,8 @@ Next:
 exports[`add-tasks tool adding multiple tasks should handle tasks with section and parent IDs 1`] = `
 "Added 1 task to projects.
 Tasks:
-    Subtask content • P2 • id=8485093750.
+    Subtask content • P2 • id=8485093750
+        Subtask description.
 Next:
 - Use get-overview to see your updated project organization"
 `;

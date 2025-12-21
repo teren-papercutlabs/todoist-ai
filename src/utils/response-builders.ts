@@ -20,6 +20,7 @@ type TaskLike = {
     priority?: number
     projectName?: string
     labels?: string[]
+    description?: string
 }
 
 type ProjectLike = {
@@ -133,7 +134,15 @@ function formatTaskPreview(task: TaskLike): string {
     const labels = task.labels?.length ? ` • ${task.labels.join(' / ')}` : ''
     const project = task.projectName ? ` • ${task.projectName}` : ''
     const id = task.id ? ` • id=${task.id}` : ''
-    return `    ${content}${due}${priority}${labels}${project}${id}`
+    const previewLine = `    ${content}${due}${priority}${labels}${project}${id}`
+    const descriptionText = task.description?.trim()
+    if (!descriptionText) {
+        return previewLine
+    }
+
+    const truncatedDescription =
+        descriptionText.length > 100 ? `${descriptionText.slice(0, 100)}...` : descriptionText
+    return `${previewLine}\n        ${truncatedDescription}`
 }
 
 /**
