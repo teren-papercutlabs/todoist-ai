@@ -293,7 +293,7 @@ async function executeCommand(commandName: string, jsonArgs: string) {
 async function main() {
     const args = process.argv.slice(2)
 
-    if (args.length === 0) {
+    if (args.length === 0 || args[0] === '--help' || args[0] === '-h') {
         showUsage()
         process.exit(0)
     }

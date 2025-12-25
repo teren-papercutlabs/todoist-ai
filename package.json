@@ -30,6 +30,7 @@
     "scripts": {
         "test": "jest",
         "build": "rimraf dist && npx tsc --project tsconfig.json",
+        "bundle:todoist": "npx esbuild src/cli-bundle.ts --bundle --platform=node --format=esm --target=node18 --outfile=dist/todoist --external:fsevents",
         "postbuild": "chmod +x dist/main.js",
         "start": "npm run build && npx @modelcontextprotocol/inspector node dist/main.js",
         "dev": "concurrently \"npx tsc --watch\" \"npx @modelcontextprotocol/inspector npx nodemon --quiet --watch dist --ext js --exec node dist/main.js\"",
